@@ -139,36 +139,22 @@
 (defun emms-bilibili-download-marked-tracks ()
   "Download all tracks marked in the `emms-bilibili' playlist buffer."
   (interactive)
-  (let ((tracks (emms-mark-mapcar-marked-track 'emms-bilibili-track-at t)))
+  (let ((tracks (emms-mark-mapcar-marked-track 'emms-playlist-track-at t)))
     (if (null tracks)
         (message "No track marked!")
       ;; `youtube-dl' command can accepts multiple URLs.
       (mapc 'emms-bilibili-download-track tracks))))
 
-(defun emms-bilibili-track-at (&optional pos)
-  "Get the track at position `POS'."
-  (let ((track (emms-playlist-track-at pos))
-        newtrack)
-    (when track
-      (setq newtrack (copy-sequence track))
-      (emms-track-set newtrack 'position (point-marker))
-      (emms-track-set newtrack 'orig-track track)
-      newtrack)))
-
 (defun emms-bilibili-download-track (track)
   "Download the tracks at point, or `TRACK'."
-  (interactive (list (emms-bilibili-track-at)))
+  (interactive (list (emms-playlist-track-at)))
   (if (null track)
       (message "No tracks at point!")
     (emms-bilibili-download-with-youtube-dl track)))
 
-(defun emms-bilibili-extract-url (track)
-  "Extract URLs from `TRACK'."
-  (emms-track-get track 'info-url))
-
 (defun emms-bilibili-download-with-youtube-dl (track)
   "Download `TRACK' with `youtube-dl'."
-  (let ((track-url (emms-bilibili-extract-url track))
+  (let ((track-url (emms-track-get track 'info-url))
         (default-directory (expand-file-name emms-bilibili-download-directory)))
     (if (null track-url)
         (message "Track URL property does not exist!")
