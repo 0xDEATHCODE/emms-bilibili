@@ -154,7 +154,7 @@
 
 (defun emms-bilibili-download-with-youtube-dl (track)
   "Download `TRACK' with `youtube-dl'."
-  (let ((track-url (emms-track-get track 'info-url))
+  (let ((track-url (emms-track-name track))
         (default-directory (expand-file-name emms-bilibili-download-directory)))
     (if (null track-url)
         (message "Track URL property does not exist!")
