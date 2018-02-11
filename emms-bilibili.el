@@ -59,8 +59,12 @@
 (defvar emms-bilibili-alist nil
   "Video info list.")
 
+(defvar emms-bilibili-bookmark-list nil
+  "Bookmark list.")
+
 ;; hooks
 (defvar emms-bilibili-response-received-hook nil)
+(defvar emms-bilibili-received-bookmark-list-hook nil)
 
 ;; ssl magic
 ;; (setq tls-program '("openssl s_client -connect %h:%p -no_ssl2 -ign_eof"))
@@ -87,6 +91,12 @@
 (defun emms-bilibili-generate-video-url (aid)
   "Generate video URL from `AID'."
   (format "https://www.bilibili.com/video/av%d/" aid))
+
+(defun emms-bilibili-generate-bookmark-list-url (vmid)
+  "Generate bookmark list URL."
+  (format
+   "https://api.bilibili.com/x/v2/fav/folder?vmid=%s"
+   vmid))
 
 (defun emms-bilibili-insert-track (element)
   "Create track and insert `ELEMENT' into emms-playlist."
@@ -127,11 +137,28 @@
                  (run-hooks 'emms-bilibili-response-received-hook)
                (emms-bilibili-sync-playlist (+ current-page 1))))))))))
 
+(defun emms-bilibili-sync-bookmark-list ()
+  (url-retrieve
+   (emms-bilibili-generate-bookmark-list-url emms-bilibili-mid)
+   (lambda (status)
+     (let ((res (current-buffer))
+           (json-array-type 'list))
+       (with-current-buffer res
+         (emms-bilibili-url-clean-response-buffer)
+         (let* ((json-raw (json-read-from-string (decode-coding-string (buffer-string) 'utf-8)))
+                (data (alist-get 'data json-raw)))
+           (setq emms-bilibili-bookmark-list (mapcar (lambda (bookmark)
+                                                       (alist-get 'fid bookmark))
+                                                     data))
+           (run-hooks 'emms-bilibili-received-bookmark-list-hook)))))))
+
 ;; add hook
 (add-hook 'emms-bilibili-response-received-hook
           (lambda () (mapcar 'emms-bilibili-insert-track emms-bilibili-alist)))
 (add-hook 'emms-bilibili-response-received-hook
           (lambda () (message "EMMS Bilibili fetch playlist done.")))
+(add-hook 'emms-bilibili-received-bookmark-list-hook
+          (lambda () (message "EMMS Bilibili fetch bookmark list done.")))
 
 ;;; Support marked tracks actions.
 (define-key emms-mark-mode-map "d" 'emms-bilibili-download-marked-tracks)
